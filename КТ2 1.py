@@ -1,143 +1,153 @@
-import heapq
 from collections import Counter
 
 
 class Node:
-    """Класс для узла дерева Хаффмана"""
-
-    def __init__(self, char, freq):
+    def __init__(self, char=None, freq=0, left=None, right=None):
         self.char = char
         self.freq = freq
-        self.left = None
-        self.right = None
-
-    def __lt__(self, other):
-        return self.freq < other.freq
+        self.left = left
+        self.right = right
 
 
-class HuffmanTree:
-    """Класс для построения дерева Хаффмана"""
+class MinHeap:
+    def __init__(self):
+        self.heap = []
 
-    def __init__(self, text):
-        self.text = text
-        self.codes = {}
-        self.reverse_codes = {}
-        self.root = self._build_tree()
-        if self.root:
-            self._generate_codes(self.root, "")
+    def _parent(self, i):
+        return (i - 1) // 2
 
-    def _build_tree(self):
-        """Построение дерева Хаффмана"""
-        if not self.text:
-            return None
+    def _left_child(self, i):
+        return 2 * i + 1
 
-        # Подсчет частот символов
-        frequency = Counter(self.text)
+    def _right_child(self, i):
+        return 2 * i + 2
 
-        # Создание начальной кучи
-        heap = []
-        for char, freq in frequency.items():
-            heapq.heappush(heap, Node(char, freq))
+    def _swap(self, i, j):
+        self.heap[i], self.heap[j] = self.heap[j], self.heap[i]
 
-        # Построение дерева
-        while len(heap) > 1:
-            left = heapq.heappop(heap)
-            right = heapq.heappop(heap)
+    def _bubble_up(self, i):
+        while i > 0:
+            parent = self._parent(i)
+            if self.heap[i].freq < self.heap[parent].freq:
+                self._swap(i, parent)
+                i = parent
+            else:
+                break
 
-            merged = Node(None, left.freq + right.freq)
-            merged.left = left
-            merged.right = right
+    def _bubble_down(self, i):
+        size = len(self.heap)
+        while True:
+            left = self._left_child(i)
+            right = self._right_child(i)
+            smallest = i
+            if left < size and self.heap[left].freq < self.heap[smallest].freq:
+                smallest = left
+            if right < size and self.heap[right].freq < self.heap[smallest].freq:
+                smallest = right
+            if smallest != i:
+                self._swap(i, smallest)
+                i = smallest
+            else:
+                break
 
-            heapq.heappush(heap, merged)
+    def push(self, item):
+        self.heap.append(item)
+        self._bubble_up(len(self.heap) - 1)
 
-        return heapq.heappop(heap) if heap else None
+    def pop(self):
+        if not self.heap:
+            raise IndexError("pop from empty heap")
+        root = self.heap[0]
+        last = self.heap.pop()
+        if self.heap:
+            self.heap[0] = last
+            self._bubble_down(0)
+        return root
 
-    def _generate_codes(self, node, current_code):
-        """Генерация кодов Хаффмана для символов"""
-        if node is None:
-            return
-
-        if node.char is not None:
-            self.codes[node.char] = current_code
-            self.reverse_codes[current_code] = node.char
-            return
-
-        self._generate_codes(node.left, current_code + "0")
-        self._generate_codes(node.right, current_code + "1")
-
-    def encode(self):
-        """Кодирование текста"""
-        if not self.root:
-            return ""
-        return ''.join(self.codes[char] for char in self.text)
-
-    def print_tree(self, node=None, level=0, prefix="Root: "):
-        """Вывод дерева в читаемом формате"""
-        if node is None:
-            node = self.root
-            if node is None:
-                print("Дерево пустое")
-                return
-
-        if node.char is not None:
-            print(" " * (level * 4) + prefix + f"'{node.char}': {node.freq}")
-        else:
-            print(" " * (level * 4) + prefix + f"({node.freq})")
-
-            if node.left:
-                self.print_tree(node.left, level + 1, "L--- ")
-            if node.right:
-                self.print_tree(node.right, level + 1, "R--- ")
-
-    def print_codes(self):
-        """Вывод кодов для всех символов"""
-        print("\nКоды Хаффмана:")
-        for char, code in sorted(self.codes.items()):
-            print(f"  '{char}': {code}")
+    def __len__(self):
+        return len(self.heap)
 
 
-# Код, который был в функции main
-print("Программа построения дерева Хаффмана для русского текста")
-print("=" * 50)
+def build_huffman_tree(text):
+    if not text:
+        print("Ошибка: Текст пустой!")
+        return None
 
-text = input("Введите текст на русском языке: ").strip()
+    freq = Counter(text)
+    priority_queue = MinHeap()
+    for char in freq:
+        priority_queue.push(Node(char, freq[char]))
+
+    while len(priority_queue) > 1:
+        left = priority_queue.pop()
+        right = priority_queue.pop()
+        merged = Node(None, left.freq + right.freq, left, right)
+        priority_queue.push(merged)
+
+    return priority_queue.pop() if priority_queue else None
+
+
+def generate_codes(node, current_code, codes):
+    if node is None:
+        return
+    if node.char is not None:
+        codes[node.char] = current_code
+        return
+    generate_codes(node.left, current_code + "0", codes)
+    generate_codes(node.right, current_code + "1", codes)
+
+
+def print_tree(node, indent=""):
+    if node is None:
+        return
+    if node.char is not None:
+        print(indent + f"Лист: '{node.char}' (частота: {node.freq})")
+    else:
+        print(indent + f"Внутренний узел (частота: {node.freq})")
+        print_tree(node.left, indent + "  ├──L: ")
+        print_tree(node.right, indent + "  └──R: ")
+
+
+def calculate_bits(text, codes):
+    freq = Counter(text)
+    total_bits = sum(len(codes[char]) * freq[char] for char in freq)
+    return total_bits
+
+alphabet = 'йцукенгшщзфывапролджэячсмитьбю'
+
+print("\nВведите текст для кодирования:")
+text = input("Текст: ").strip()
 
 if not text:
-    print("Ошибка: введен пустой текст!")
-    exit()
+    print("\nОшибка: Текст не может быть пустым!")
 
-# Проверка, что текст содержит только русские буквы и пробелы
-russian_letters = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюя ')
-if not all(char.lower() in russian_letters for char in text):
-    print("Ошибка: текст должен содержать только русские буквы и пробелы!")
-    exit()
+filtered_text = ''.join([char for char in text if char in alphabet])
 
-# Построение дерева Хаффмана
-huffman = HuffmanTree(text)
 
-# Вывод результатов
-print("\n" + "=" * 50)
-print("РЕЗУЛЬТАТЫ:")
-print("=" * 50)
+tree = build_huffman_tree(filtered_text)
+codes = {}
+generate_codes(tree, "", codes)
 
-# Вывод дерева
-print("\nДерево Хаффмана:")
-huffman.print_tree()
+print("КОДЫ ХАФФМАНА:")
+for char in sorted(codes):
+    count = filtered_text.count(char)
+    print(f"  '{char}': {codes[char]} (встречается {count} раз)")
 
-# Вывод кодов
-huffman.print_codes()
 
-# Кодирование текста
-encoded_text = huffman.encode()
-print(f"\nЗакодированный текст:")
-print(f"  {encoded_text}")
+print("ДЕРЕВО ХАФФМАНА:")
+print_tree(tree)
 
-# Вывод статистики
-original_size = len(text) * 8  # в битах (предполагаем 8 бит на символ)
-encoded_size = len(encoded_text)
-compression_ratio = (1 - encoded_size / original_size) * 100
+bits = calculate_bits(filtered_text, codes)
+original_bits = len(filtered_text) * 8
 
-print(f"\nСтатистика:")
-print(f"  Исходный размер: {original_size} бит")
-print(f"  Закодированный размер: {encoded_size} бит")
-print(f"  Степень сжатия: {compression_ratio:.2f}%")
+print(f"Всего бит для кодирования: {bits}")
+print(f"Бит при ASCII-кодировании: {original_bits}")
+
+if original_bits > 0:
+    compression_ratio = (1 - bits / original_bits) * 100
+    print(f"Степень сжатия: {compression_ratio:.2f}%")
+
+encoded_text = ''.join([codes[char] for char in filtered_text])
+print("ЗАКОДИРОВАННЫЙ ТЕКСТ:")
+
+print(encoded_text)
