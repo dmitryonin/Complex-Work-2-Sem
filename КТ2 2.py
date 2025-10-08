@@ -1,19 +1,41 @@
 class Graph:
     def __init__(self, n: int):
         self.n = n
-        self.INF = float('inf')
-        self.matrix = [[0] * n for _ in range(n)]
+        self.INF = 10 ** 9
+        self.matrix = []
+        for i in range(n):
+            row = []
+            for j in range(n):
+                if i == j:
+                    row += [0]
+                else:
+                    row += [self.INF]
+            self.matrix += [row]
 
     def set_matrix(self, matrix):
-        if len(matrix) != self.n or any(len(row) != self.n for row in matrix):
+        if len(matrix) != self.n:
             raise ValueError("Матрица должна быть размером N×N.")
-        self.matrix = matrix
+        for row in matrix:
+            if len(row) != self.n:
+                raise ValueError("Матрица должна быть размером N×N.")
+
+        self.matrix = []
+        for i in range(self.n):
+            new_row = []
+            for j in range(self.n):
+                new_row += [matrix[i][j]]
+            self.matrix += [new_row]
 
     def shortest_way(self):
         n = self.n
-        dist = [row[:] for row in self.matrix]
-        #алгоритм флойда уоршелла
+        dist = []
+        for i in range(n):
+            new_row = []
+            for j in range(n):
+                new_row += [self.matrix[i][j]]
+            dist += [new_row]
 
+        #алгоритм флойда уоршелла
         for k in range(n):
             for i in range(n):
                 for j in range(n):
@@ -37,8 +59,6 @@ class Graph:
         return dist[start][end]
 
 
-
-
 K = int(input("Введите номер начальной вершины K: "))
 M = int(input("Введите номер конечной вершины M: "))
 N = int(input("Введите количество вершин N (1 ≤ N ≤ 100): "))
@@ -48,10 +68,14 @@ print("На главной диагонали всегда нули.")
 
 matrix = []
 for i in range(N):
-    row = list(map(int, input(f"Строка {i+1}: ").split()))
-    if len(row) != N:
-        raise ValueError(f"Ошибка: в строке {i+1} должно быть {N} чисел.")
-    matrix.append(row)
+    row_input = input(f"Строка {i + 1}: ").split()
+    if len(row_input) != N:
+        raise ValueError(f"Ошибка: в строке {i + 1} должно быть {N} чисел.")
+
+    row = []
+    for num_str in row_input:
+        row += [int(num_str)]
+    matrix += [row]
 
 graph = Graph(N)
 graph.set_matrix(matrix)
@@ -62,7 +86,6 @@ if result is None:
     print("\nПуть имеет отрицательный цикл. Его длина может быть сколь угодно малой (-INF).")
 else:
     print(f"\nДлина кратчайшего пути из вершины {K} в вершину {M}: {result}")
-
 
 '''
  K: 1
