@@ -1,70 +1,79 @@
-from collections import deque
+INF = 10**12
 
-print("\nВведите данные о графе:")
-print("Сначала введите два числа: количество вершин и начальную вершину")
-print("Затем введите матрицу смежности построчно")
+print("Программа ищет кратчайший путь между двумя пунктами графа.\n")
 
-try:
-    data = input("Введите N и S: ").split()
-    if len(data) != 2:
-        print("Ошибка: нужно ввести ровно два числа!")
+K = int(input("Введите номер начальной вершины K: "))
+M = int(input("Введите номер конечной вершины M: "))
+N = int(input("Введите количество вершин графа N (1 ≤ N ≤ 100): "))
+
+print("\nТеперь введите матрицу смежности графа (N строк по N чисел):")
+print("Каждое число — это вес ребра из вершины i в вершину j.")
+print("На главной диагонали всегда нули.\n")
+
+dist = []
+for i in range(N):
+    row = list(map(int, input(f"Строка {i+1}: ").split()))
+    if len(row) != N:
+        print("Ошибка: в строке должно быть", N, "чисел.")
         exit()
+    dist.append(row)
 
-    n = int(data[0])
-    s = int(data[1])
+for k in range(N):
+    for i in range(N):
+        for j in range(N):
+            if dist[i][k] + dist[k][j] < dist[i][j]:
+                dist[i][j] = dist[i][k] + dist[k][j]
 
-    if n < 1 or n > 100:
-        print("Ошибка: N должно быть в диапазоне от 1 до 100!")
-        exit()
+k_idx = K - 1
+m_idx = M - 1
+for v in range(N):
+    if dist[v][v] < 0 and dist[k_idx][v] < INF and dist[v][m_idx] < INF:
+        print("\nПуть имеет отрицательный цикл. Его длина может быть сколь угодно малой (-INF).")
+        break
+else:
+    result = dist[k_idx][m_idx]
+    print(f"\nДлина кратчайшего пути из вершины {K} в вершину {M}: {result}")
 
-    if s < 1 or s > n:
-        print(f"Ошибка: S должно быть в диапазоне от 1 до {n}!")
-        exit()
+'''
+ K: 1
+ M: 3
+ N: 3
 
-    print(f"\nВведите матрицу смежности {n}x{n}:")
-    graph = []
-    for i in range(n):
-        row = list(map(int, input(f"Строка {i + 1}: ").split()))
-        if len(row) != n:
-            print(f"Ошибка: в строке должно быть ровно {n} чисел!")
-            exit()
-        graph.append(row)
+Строка 1: 0 2 5
+Строка 2: 2 0 1
+Строка 3: 5 1 0
 
-    for i in range(n):
-        for j in range(n):
-            if graph[i][j] not in [0, 1]:
-                print("Ошибка: матрица должна содержать только 0 и 1!")
-                exit()
-            if i == j and graph[i][j] != 0:
-                print("Ошибка: на главной диагонали должны быть нули!")
-                exit()
-            if graph[i][j] != graph[j][i]:
-                print("Ошибка: матрица должна быть симметричной!")
-                exit()
+K = 1
+M = 3
+N = 3
 
-    visited = [False] * n
-    component = []
+Строка 1: 0 -2 4
+Строка 2: 1 0 3
+Строка 3: 2 -1 0
 
-    start = s - 1
-    queue = deque([start])
-    visited[start] = True
+K = 1
+M = 4
+N = 4
 
-    while queue:
-        vertex = queue.popleft()
-        component.append(vertex + 1)
+Строка 1: 0 1 10 100
+Строка 2: 1 0 1 100
+Строка 3: 10 1 0 1
+Строка 4: 100 100 1 0
 
-        for neighbor in range(n):
-            if graph[vertex][neighbor] == 1 and not visited[neighbor]:
-                visited[neighbor] = True
-                queue.append(neighbor)
+K = 1
+M = 3
+N = 3
 
-    component.sort()
+Строка 1: 0 1 10
+Строка 2: -2 0 3
+Строка 3: 4 -5 0
 
-    print("РЕЗУЛЬТАТЫ:")
-    print(f"Количество вершин в компоненте связности с вершиной {s}: {len(component)}")
-    print(f"Вершины в компоненте связности: {' '.join(map(str, component))}")
+K = 2
+M = 3
+N = 3
 
-except ValueError:
-    print("Ошибка: введите корректные числа!")
-except Exception as e:
-    print(f"Произошла ошибка: {e}")
+Строка 1: 0 5 1
+Строка 2: 2 0 2
+Строка 3: 5 1 0
+
+'''
