@@ -1,38 +1,68 @@
-INF = 10**12
+class Graph:
+    def __init__(self, n: int):
+        self.n = n
+        self.INF = float('inf')
+        self.matrix = [[0] * n for _ in range(n)]
 
-print("Программа ищет кратчайший путь между двумя пунктами графа.\n")
+    def set_matrix(self, matrix):
+        if len(matrix) != self.n or any(len(row) != self.n for row in matrix):
+            raise ValueError("Матрица должна быть размером N×N.")
+        self.matrix = matrix
+
+    def shortest_way(self):
+        n = self.n
+        dist = [row[:] for row in self.matrix]
+        #алгоритм флойда уоршелла
+
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    if dist[i][k] + dist[k][j] < dist[i][j]:
+                        dist[i][j] = dist[i][k] + dist[k][j]
+        return dist
+
+    def has_negative_cycle(self, dist, start, end):
+        for v in range(self.n):
+            if dist[v][v] < 0 and dist[start][v] < self.INF and dist[v][end] < self.INF:
+                return True
+        return False
+
+    def shortest_path(self, start: int, end: int):
+        dist = self.shortest_way()
+        start -= 1
+        end -= 1
+
+        if self.has_negative_cycle(dist, start, end):
+            return None
+        return dist[start][end]
+
+
+
 
 K = int(input("Введите номер начальной вершины K: "))
 M = int(input("Введите номер конечной вершины M: "))
-N = int(input("Введите количество вершин графа N (1 ≤ N ≤ 100): "))
+N = int(input("Введите количество вершин N (1 ≤ N ≤ 100): "))
 
-print("\nТеперь введите матрицу смежности графа (N строк по N чисел):")
-print("Каждое число — это вес ребра из вершины i в вершину j.")
-print("На главной диагонали всегда нули.\n")
+print("\nВведите матрицу смежности графа (N строк по N чисел):")
+print("На главной диагонали всегда нули.")
 
-dist = []
+matrix = []
 for i in range(N):
     row = list(map(int, input(f"Строка {i+1}: ").split()))
     if len(row) != N:
-        print("Ошибка: в строке должно быть", N, "чисел.")
-        exit()
-    dist.append(row)
+        raise ValueError(f"Ошибка: в строке {i+1} должно быть {N} чисел.")
+    matrix.append(row)
 
-for k in range(N):
-    for i in range(N):
-        for j in range(N):
-            if dist[i][k] + dist[k][j] < dist[i][j]:
-                dist[i][j] = dist[i][k] + dist[k][j]
+graph = Graph(N)
+graph.set_matrix(matrix)
 
-k_idx = K - 1
-m_idx = M - 1
-for v in range(N):
-    if dist[v][v] < 0 and dist[k_idx][v] < INF and dist[v][m_idx] < INF:
-        print("\nПуть имеет отрицательный цикл. Его длина может быть сколь угодно малой (-INF).")
-        break
+result = graph.shortest_path(K, M)
+
+if result is None:
+    print("\nПуть имеет отрицательный цикл. Его длина может быть сколь угодно малой (-INF).")
 else:
-    result = dist[k_idx][m_idx]
     print(f"\nДлина кратчайшего пути из вершины {K} в вершину {M}: {result}")
+
 
 '''
  K: 1
