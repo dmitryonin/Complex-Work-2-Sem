@@ -97,16 +97,6 @@ def generate_codes(node, current_code, codes):
     generate_codes(node.right, current_code + "1", codes)
 
 
-def print_tree(node, indent=""):
-    if node is None:
-        return
-    if node.char is not None:
-        print(indent + f"Лист: '{node.char}' (частота: {node.freq})")
-    else:
-        print(indent + f"Внутренний узел (частота: {node.freq})")
-        print_tree(node.left, indent + "  ├──L: ")
-        print_tree(node.right, indent + "  └──R: ")
-
 
 def calculate_bits(text, codes):
     freq = Counter(text)
@@ -132,10 +122,6 @@ print("КОДЫ ХАФФМАНА:")
 for char in sorted(codes):
     count = filtered_text.count(char)
     print(f"  '{char}': {codes[char]} (встречается {count} раз)")
-
-
-print("ДЕРЕВО ХАФФМАНА:")
-print_tree(tree)
 
 bits = calculate_bits(filtered_text, codes)
 original_bits = len(filtered_text) * 8
