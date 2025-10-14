@@ -2,90 +2,125 @@ class Graph:
     def __init__(self, n: int):
         self.n = n
         self.INF = 10 ** 9
-        self.matrix = []
-        for i in range(n):
-            row = []
-            for j in range(n):
-                if i == j:
-                    row += [0]
-                else:
-                    row += [self.INF]
-            self.matrix += [row]
+        self.matrix = [[0 if i == j else self.INF for j in range(n)] for i in range(n)]
 
     def set_matrix(self, matrix):
-        if len(matrix) != self.n:
-            raise ValueError("Матрица должна быть размером N×N.")
-        for row in matrix:
-            if len(row) != self.n:
-                raise ValueError("Матрица должна быть размером N×N.")
+        for i, row in enumerate(matrix):
+            if row[i] != 0:
+                raise ValueError(f"Диагональный элемент matrix[{i}][{i}] должен быть 0")
+        self.matrix = [row[:] for row in matrix]
 
-        self.matrix = []
-        for i in range(self.n):
-            new_row = []
-            for j in range(self.n):
-                new_row += [matrix[i][j]]
-            self.matrix += [new_row]
-
-    def shortest_way(self):
-        n = self.n
-        dist = []
-        for i in range(n):
-            new_row = []
-            for j in range(n):
-                new_row += [self.matrix[i][j]]
-            dist += [new_row]
-
-        #алгоритм флойда уоршелла
-        for k in range(n):
-            for i in range(n):
-                for j in range(n):
-                    if dist[i][k] + dist[k][j] < dist[i][j]:
-                        dist[i][j] = dist[i][k] + dist[k][j]
+    def floyd_warshall(self):
+        dist = [row[:] for row in self.matrix]
+        for k in range(self.n):
+            for i in range(self.n):
+                if dist[i][k] == self.INF:
+                    continue
+                for j in range(self.n):
+                    new_distance = dist[i][k] + dist[k][j]
+                    if new_distance < dist[i][j]:
+                        dist[i][j] = new_distance
         return dist
 
-    def has_negative_cycle(self, dist, start, end):
+    def has_negative_cycle_on_path(self, dist, start, end):
         for v in range(self.n):
             if dist[v][v] < 0 and dist[start][v] < self.INF and dist[v][end] < self.INF:
                 return True
         return False
 
     def shortest_path(self, start: int, end: int):
-        dist = self.shortest_way()
-        start -= 1
-        end -= 1
-
-        if self.has_negative_cycle(dist, start, end):
+        start_idx = start - 1
+        end_idx = end - 1
+        dist = self.floyd_warshall()
+        if self.has_negative_cycle_on_path(dist, start_idx, end_idx):
             return None
-        return dist[start][end]
+        return dist[start_idx][end_idx] if dist[start_idx][end_idx] < self.INF else self.INF
+
+    def __str__(self):
+        return f"Graph(n={self.n})"
+
+    def print_matrix(self):
+        print("Матрица смежности:")
+        for row in self.matrix:
+            print(" ".join(f"{x:8}" if x != self.INF else "     INF" for x in row))
 
 
-K = int(input("Введите номер начальной вершины K: "))
-M = int(input("Введите номер конечной вершины M: "))
-N = int(input("Введите количество вершин N (1 ≤ N ≤ 100): "))
+def input_and_validate_data():
+    while True:
+        try:
+            N = int(input("Введите количество вершин N (1 ≤ N ≤ 100): "))
+            if 1 <= N <= 100:
+                break
+            print("Ошибка: N должно быть от 1 до 100")
+        except ValueError:
+            print("Ошибка: введите целое число")
 
-print("\nВведите матрицу смежности графа (N строк по N чисел):")
-print("На главной диагонали всегда нули.")
+    while True:
+        try:
+            K = int(input("Введите номер начальной вершины K: "))
+            if 1 <= K <= N:
+                break
+            print(f"Ошибка: K должно быть от 1 до {N}")
+        except ValueError:
+            print("Ошибка: введите целое число")
 
-matrix = []
-for i in range(N):
-    row_input = input(f"Строка {i + 1}: ").split()
-    if len(row_input) != N:
-        raise ValueError(f"Ошибка: в строке {i + 1} должно быть {N} чисел.")
+    while True:
+        try:
+            M = int(input("Введите номер конечной вершины M: "))
+            if 1 <= M <= N:
+                break
+            print(f"Ошибка: M должно быть от 1 до {N}")
+        except ValueError:
+            print("Ошибка: введите целое число")
 
-    row = []
-    for num_str in row_input:
-        row += [int(num_str)]
-    matrix += [row]
+    print(f"\nВведите матрицу смежности графа {N}×{N}:")
+
+    matrix = []
+    for i in range(N):
+        while True:
+            try:
+                row_input = input(f"Строка {i + 1}: ").split()
+                if len(row_input) != N:
+                    print(f"Ошибка: введите ровно {N} чисел")
+                    continue
+
+                row = []
+                for j, num_str in enumerate(row_input):
+                    if num_str.upper() == "INF":
+                        value = 10 ** 9
+                    else:
+                        value = int(num_str)
+
+                    if i == j and value != 0:
+                        print(f"Предупреждение: диагональный элемент matrix[{i}][{j}] установлен в 0")
+                        value = 0
+
+                    row.append(value)
+
+                matrix.append(row)
+                break
+
+            except ValueError:
+                print("Ошибка: введите целые числа или INF")
+
+    return N, K, M, matrix
+
+
+N, K, M, matrix = input_and_validate_data()
 
 graph = Graph(N)
 graph.set_matrix(matrix)
 
+print("\n" + "=" * 50)
 result = graph.shortest_path(K, M)
 
 if result is None:
-    print("\nПуть имеет отрицательный цикл. Его длина может быть сколь угодно малой (-INF).")
+    print(f"Путь из вершины {K} в вершину {M} имеет отрицательный цикл.")
+    print("Длина пути может быть сколь угодно малой (-INF).")
+elif result == graph.INF:
+    print(f"Путь из вершины {K} в вершину {M} не существует.")
 else:
-    print(f"\nДлина кратчайшего пути из вершины {K} в вершину {M}: {result}")
+    print(f"Длина кратчайшего пути из вершины {K} в вершину {M}: {result}")
 
 '''
  K: 1
