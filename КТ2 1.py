@@ -1,6 +1,3 @@
-from collections import Counter
-
-
 class Node:
     def __init__(self, char=None, freq=0, left=None, right=None):
         self.char = char
@@ -12,6 +9,8 @@ class Node:
 class MinHeap:
     def __init__(self):
         self.heap = []
+        self._size = 0
+        self._capacity = 0
 
     def _parent(self, i):
         return (i - 1) // 2
@@ -35,14 +34,13 @@ class MinHeap:
                 break
 
     def _bubble_down(self, i):
-        size = len(self.heap)
         while True:
             left = self._left_child(i)
             right = self._right_child(i)
             smallest = i
-            if left < size and self.heap[left].freq < self.heap[smallest].freq:
+            if left < self._size and self.heap[left].freq < self.heap[smallest].freq:
                 smallest = left
-            if right < size and self.heap[right].freq < self.heap[smallest].freq:
+            if right < self._size and self.heap[right].freq < self.heap[smallest].freq:
                 smallest = right
             if smallest != i:
                 self._swap(i, smallest)
@@ -51,40 +49,54 @@ class MinHeap:
                 break
 
     def push(self, item):
-        self.heap.append(item)
-        self._bubble_up(len(self.heap) - 1)
+        if self._size < self._capacity:
+            self.heap[self._size] = item
+        else:
+            self.heap.append(item)
+            self._capacity += 1
+        self._size += 1
+        self._bubble_up(self._size - 1)
 
     def pop(self):
-        if not self.heap:
+        if self._size == 0:
             raise IndexError("pop from empty heap")
+
         root = self.heap[0]
-        last = self.heap.pop()
-        if self.heap:
-            self.heap[0] = last
+        self._size -= 1
+
+        if self._size > 0:
+            self.heap[0] = self.heap[self._size]
             self._bubble_down(0)
+
         return root
 
     def __len__(self):
-        return len(self.heap)
+        return self._size
 
 
 def build_huffman_tree(text):
-    if not text:
+    if string_length(text) == 0:
         print("Ошибка: Текст пустой!")
         return None
 
-    freq = Counter(text)
+    freq = {}
+    for char in text:
+        if char in freq:
+            freq[char] += 1
+        else:
+            freq[char] = 1
+
     priority_queue = MinHeap()
     for char in freq:
         priority_queue.push(Node(char, freq[char]))
 
-    while len(priority_queue) > 1:
+    while priority_queue.__len__() > 1:
         left = priority_queue.pop()
         right = priority_queue.pop()
         merged = Node(None, left.freq + right.freq, left, right)
         priority_queue.push(merged)
 
-    return priority_queue.pop() if priority_queue else None
+    return priority_queue.pop() if priority_queue.__len__() > 0 else None
 
 
 def generate_codes(node, current_code, codes):
@@ -97,34 +109,72 @@ def generate_codes(node, current_code, codes):
     generate_codes(node.right, current_code + "1", codes)
 
 
-
 def calculate_bits(text, codes):
-    freq = Counter(text)
-    total_bits = sum(len(codes[char]) * freq[char] for char in freq)
+    freq = {}
+    for char in text:
+        if char in freq:
+            freq[char] += 1
+        else:
+            freq[char] = 1
+
+    total_bits = 0
+    for char in freq:
+        code_length = 0
+        for _ in codes[char]:
+            code_length += 1
+        total_bits += code_length * freq[char]
     return total_bits
+
+
+def string_length(s):
+    count = 0
+    for _ in s:
+        count += 1
+    return count
+
+
+def is_text_empty(text):
+    for _ in text:
+        return False
+    return True
+
 
 alphabet = 'йцукенгшщзфывапролджэячсмитьбю'
 
 print("\nВведите текст для кодирования:")
 text = input("Текст: ").strip()
 
-if not text:
+if is_text_empty(text):
     print("\nОшибка: Текст не может быть пустым!")
+    exit()
 
-filtered_text = ''.join([char for char in text if char in alphabet])
+filtered_text = ''
+for char in text:
+    if char in alphabet:
+        filtered_text += char
 
+if is_text_empty(filtered_text):
+    print("\nОшибка: После фильтрации текст пустой!")
+    exit()
 
 tree = build_huffman_tree(filtered_text)
+if tree is None:
+    print("Не удалось построить дерево Хаффмана")
+    exit()
+
 codes = {}
 generate_codes(tree, "", codes)
 
 print("КОДЫ ХАФФМАНА:")
 for char in sorted(codes):
-    count = filtered_text.count(char)
+    count = 0
+    for c in filtered_text:
+        if c == char:
+            count += 1
     print(f"  '{char}': {codes[char]} (встречается {count} раз)")
 
 bits = calculate_bits(filtered_text, codes)
-original_bits = len(filtered_text) * 8
+original_bits = string_length(filtered_text) * 8
 
 print(f"Всего бит для кодирования: {bits}")
 print(f"Бит при ASCII-кодировании: {original_bits}")
@@ -133,7 +183,9 @@ if original_bits > 0:
     compression_ratio = (1 - bits / original_bits) * 100
     print(f"Степень сжатия: {compression_ratio:.2f}%")
 
-encoded_text = ''.join([codes[char] for char in filtered_text])
-print("ЗАКОДИРОВАННЫЙ ТЕКСТ:")
+encoded_text = ''
+for char in filtered_text:
+    encoded_text += codes[char]
 
+print("ЗАКОДИРОВАННЫЙ ТЕКСТ:")
 print(encoded_text)
